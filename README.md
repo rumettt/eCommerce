@@ -1,151 +1,199 @@
-# eCommerce Website
+# Full-Stack E-Commerce Platform
 
-Welcome to the repository for our full stack eCommerce website built using the PERN stack (PostgreSQL, Express, React, Node.js). This project demonstrates a comprehensive online shopping experience with a variety of features and pages.
+Welcome to the repository for our full-stack E-Commerce platform built using the modern **PERN Stack** (PostgreSQL, Express 5, React 19, Node.js) and powered by **Next.js 15**. This project delivers a high-performance, responsive online shopping experience with secure transaction processing, dynamic product catalogs, and custom analytics algorithms.
 
 ![Desktop](/website-demo-image/desktop.png)
 ![Mobile](/website-demo-image/mobile.png)
 ![Showcase1](/website-demo-image/1.png)
 ![Showcase2](/website-demo-image/2.png)
-## Features
 
-### eCommerce Features
-- **Categories & Subcategories:** Well-organized categories and subcategories for easy navigation.
-- **Products:** Detailed product pages with options for different sizes and colors.
-- **Payment Gateway:** Integrated with individual products and cart for secure transactions. ( Stripe )
-- **Wishlist:** Option to save favorite products.
-- **Special Deals:** Exclusive deals displayed on the homepage.
-- **Banners:** Eye-catching banners to highlight promotions.
-- **Responsive Design:** Modern and mobile-friendly layout.
-- **Quantity Purchase:** Ability to purchase multiple quantities of a product.
-- **Homepage Algorithms:** Various algorithms to display products dynamically on the homepage.
-- **Filtering & Sorting:** Advanced filtering and sorting options on search and category pages.
-- **JWT Session:** Secure user sessions with JWT.
-- **Encrypted Passwords:** Enhanced security with password encryption.
-- **OAuth Support:** Easy registration and sign-in with OAuth.
-- **Payment on Delivery:** Option to pay upon delivery.
-- **Order Tracking:** Track orders with a detailed orders page.
-- **Order Summary:** Comprehensive order summary page.
-- **Custom Checkout:** Tailored checkout experience.
-- **Review System:** Post, delete, and edit reviews with a dedicated reviews page.
-- **Dynamic Routing:** Smooth navigation with dynamic routing.
-- **Product Quickview:** Quickly view product details and add to cart or go to the product page.
-- **Active Review & Rating Calculation:** Backend will update variables required for algorithms to work properly, actively calculate rating's & frontend required parameters.
+---
 
-### Other Pages
-- **Category Specific Page:** Detailed pages for each category.
-- **Subcategory Page:** Dedicated pages for subcategories.
-- **Blog:** Informative blog section.
-- **Contact Page:** Easy-to-use contact form.
-- **Services Page:** Overview of offered services.
-- **About Us:** Information about the company.
-- **Privacy Policy:** Details on data privacy.
-- **Secure Payment Page:** Information on secure payment methods.
-- **Terms and Conditions:** Detailed terms and conditions.
-- **Refund and Cancellation Policy:** Policies on refunds and cancellations.
+## Key Features
 
-## Installation
+### E-Commerce Capabilities
+- **Next-Gen Tech Stack:** Fully upgraded to **Next.js 15 (standalone output)**, **React 19**, and **Express 5**.
+- **Dynamic Catalog Organization:** Fully manageable Categories & Subcategories.
+- **Product Options:** Color/size variant configuration with interactive previews and dynamic routing.
+- **Unified Checkout Options:** 
+  - **Online Payment:** Integrated with Stripe (using Elements) for highly secure client-side transactions.
+  - **Payment on Delivery:** Built-in checkout flow with custom processing fee calculations.
+- **Secure Server-to-Server API Auth:** Centralized server communication via a shared `API_SECRET` rather than legacy high-overhead client-side token generation.
+- **Advanced Search & Filtering:** Dynamic sorting, pricing range filters, and rating filters on category and search views.
+- **User Dashboard & Order Tracking:** Interactive checkout tracking, transaction status, history, and detail pages.
+- **Active Review & Rating Engine:** Auto-recalculates average ratings, updates product metrics, and feeds homepage product selection algorithms dynamically.
 
-1. Clone the repository:
+### Supporting Pages
+- **Category Specific Pages & Subcategory Lists**
+- **Company Blog**
+- **Interactive Contact Page**
+- **Service Offerings Overview**
+- **Legal/Policy Documents:** Terms & Conditions, Privacy Policy, Refund & Cancellation Policy.
+
+---
+
+## Installation & Local Development
+
+### 1. Clone the repository
+```sh
+git clone https://github.com/HarmanPreet-Singh-XYT/E-Commerce.git
+cd E-Commerce
+```
+
+### 2. Install Server Dependencies
+```sh
+cd Server
+npm install
+```
+
+### 3. Install Client Dependencies
+```sh
+cd ../Client
+npm install
+```
+
+### 4. Setup Local Databases
+1. Create a PostgreSQL database named `ecommerce`.
+2. Import the initial database schema and seed data:
    ```sh
-   git clone https://github.com/HarmanPreet-Singh-XYT/E-Commerce.git
-2. Navigate to the project directory:
+   # In the Server directory:
+   psql -U postgres -d ecommerce -f ecommerce.sql
+   ```
+
+### 5. Running in Development
+Start the Backend Express Server:
+```sh
+cd Server
+npm run dev
+```
+
+Start the Frontend Next.js Dev Server:
+```sh
+cd Client
+npm run dev
+```
+
+---
+
+## Environment Configuration
+
+Create a `.env` file inside both `/Client` and `/Server` directories based on the templates below.
+
+### Client Environment Variables (`Client/.env`)
+```env
+BACKEND_URL=http://localhost:3500
+API_SECRET=your_shared_api_secret
+
+# Public client-side keys (Baked in at build time)
+NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+NEXT_PUBLIC_DOMAIN=http://localhost:3000
+```
+
+### Server Environment Variables (`Server/.env`)
+```env
+# Database Connections
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=your_database_password
+DB_NAME=ecommerce
+
+# Application Config
+PORT=3500
+FRONTEND_SERVER_ORIGIN=http://localhost:3000
+JWT_ENCRYPTION_KEY=your_jwt_encryption_key
+API_SECRET=your_shared_api_secret
+
+# SMTP Email Delivery
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_smtp_app_password
+SMTP_SENDERNAME="Your Store Name"
+SMTP_SUPPORT=support@yourdomain.com
+
+# Stripe & Google OAuth Secrets
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+---
+
+## Getting Started with Docker
+
+Dockerfiles are located in `/Client` and `/Server`. To maintain elite security practices, **sensitive production credentials are NEVER baked into the images**; they are passed securely at runtime.
+
+### 1. Build the Images
+To build the backend (Server) image:
+```sh
+cd Server
+docker build -t harmanpreet27/ecommerce-backend .
+```
+
+To build the frontend (Client) image, pass public `NEXT_PUBLIC_` variables as build-time arguments (they will be statically compiled into the client assets):
+```sh
+cd Client
+docker build \
+  --build-arg NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com \
+  --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key \
+  --build-arg NEXT_PUBLIC_DOMAIN=https://yourstore.com \
+  -t harmanpreet27/ecommerce-client .
+```
+
+### 2. Run the Containers Individually
+Run the Backend (Server):
+```sh
+docker run -d -p 3500:3500 \
+  --name ecommerce-backend \
+  -e FRONTEND_SERVER_ORIGIN=http://localhost:3000 \
+  -e DB_USER=postgres \
+  -e DB_PASS=your_db_pass \
+  -e DB_HOST=your_db_host \
+  -e DB_PORT=5432 \
+  -e DB_NAME=ecommerce \
+  -e SMTP_USER=your_smtp_user \
+  -e SMTP_PASS=your_smtp_pass \
+  -e SMTP_HOST=smtp.gmail.com \
+  -e SMTP_SENDERNAME="Your Store" \
+  -e SMTP_SUPPORT=support@yourdomain.com \
+  -e JWT_ENCRYPTION_KEY=your_jwt_encryption_key \
+  -e API_SECRET=your_shared_api_secret \
+  -e GOOGLE_CLIENT_ID=your_google_client_id \
+  -e GOOGLE_CLIENT_SECRET=your_google_client_secret \
+  -e STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key \
+  harmanpreet27/ecommerce-backend
+```
+
+Run the Frontend (Client) at Runtime:
+```sh
+docker run -d -p 3000:3000 \
+  --name ecommerce-client \
+  -e BACKEND_URL=http://your-backend-url:3500 \
+  -e API_SECRET=your_shared_api_secret \
+  harmanpreet27/ecommerce-client
+```
+
+---
+
+## Running Together with Docker Compose (Recommended)
+
+1. Navigate to the root directory where `docker-compose.yml` is defined.
+2. Ensure you have defined a root-level `.env` file containing all variables.
+3. Start the entire container network (including Postgres database service with automated healthchecks):
    ```sh
-   cd ecommerce-website
-3. Install dependencies for the server:
+   docker compose up --build -d
+   ```
+4. Restore the initial database inside the running Postgres container:
    ```sh
-   cd Server & npm install
-4. Install dependencies for the client:
-   ```sh
-   cd ../Client & npm install
-5. Set up environment variables in a .env file for both server and client.
+   docker exec -i $(docker compose ps -q db) psql -U postgres -d ecommerce < Server/ecommerce.sql
+   ```
 
-## Running the Application (Development)
+---
 
-1. Start the Server:
-   ```sh
-   cd Server & npm run dev
-2. Start the client:
-    ```sh
-   cd Client & npm run dev
+## Contributing & License
 
-## Setting Up PostgreSQL Tables
+We welcome contributions! Please fork the repository and submit a pull request. This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-1. Create a Database named 'ecommerce'.
-2. Restore the Database using ecommerce.sql with Given SQL File.
-3. Make sure PostgreSQL server is Running, Set up Environment Variables and done.
-
-## Getting Started With Docker
-**Dockerfiles can be found for both Client and Server in their respective directories.**
-**These docker files can be run individually or together through docker compose.**
-
-## Running Individually
-
-1. Go to any directory whether it is Client or Server.
-2. Use Terminal and execute the following command to build and Get image for the following type:
-   ```sh
-   docker build -t ecommerce-client .
-      or
-   docker build -t ecommerce-server .
-3. These images then can be run through Docker Desktop or through terminal by following command:
-   ```sh
-   docker run -p 3000:3000 --name your-container-name -e BACKEND_URL=your_backend_url -e AUTH_KEY=your_auth_key -e JWT_KEY=your_jwt_key -e NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID=your_google_client_id -e NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_key -e NEXT_PUBLIC_DOMAIN=your_domain ecommerce-client
-      or
-   docker run -p 3500:3500 --name your-container-name -e FRONTEND_SERVER_ORIGIN=your_frontend_server_origin -e DB_USER=your_db_user -e DB_PASS=your_db_pass -e DB_HOST=your_db_host -e DB_PORT=your_db_port -e DB_NAME=your_db_name -e SMTP_USER=your_smtp_user -e SMTP_SUPPORT=your_smtp_support -e SMTP_HOST=your_smtp_host -e SMTP_SENDERNAME=your_smtp_sendername -e SMTP_PASS=your_smtp_pass -e JWT_ENCRYPTION_KEY=your_jwt_encryption_key -e JWT_AUTH_KEY=your_jwt_auth_key -e GOOGLE_CLIENT_ID=your_google_client_id -e GOOGLE_CLIENT_SECRET=your_google_client_secret -e STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key ecommerce-server
-## Running Together with Docker Compose
-1. Go to root directory where docker-compose.yml exists.
-2. create a .env file with All the Environment Variables in it including for both Server and Client
-3. then Start docker-compose with the following command:
-   ```sh
-   docker compose up --watch
-**As the Compose also contains PostgreSQL server, you also need to connect to the PostgreSQL server and Restore the ecommerce.sql file into the ecommerce database to get all the following tables and product and site data.**
-**or**
-**Simply remove PostgreSQL service from the following docker-compose.yml file if you have your own PostgreSQL server running.**
-## Available Docker Images
-**There are two Following images available on Docker hub for Client and Server**
-1. Client Image:
-   ```sh
-   docker pull harmanpreet27/ecommerce-client
-2. Server Image:
-   ```sh
-   docker pull harmanpreet27/ecommerce-backend
-## Contributing
-
-**We welcome contributions! Please fork the repository and submit a pull request.**
-
-## License
-
-**This project is licensed under the MIT License. See the LICENSE file for more details.**
-
-## Contact
-
-**For any questions or feedback, please contact us at harmanpreetsingh@programmer.net**
-
-## Environment Variables (Required before Starting)
-
-**For Client**
-
-- **BACKEND_URL** (Cors Requirement)
-- **AUTH_KEY** (Authorization key for Secure Frontend & Backend Communication)
-- **JWT_KEY** (JWT Key for Decryption and encryption)
-- **NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID** (Google Client ID For OAuth)
-- **NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY** (Stripe Key for payment Gateway)
-- **NEXT_PUBLIC_DOMAIN** (**Optional*** Frontend URL)
-
-**For Server**
-
-- **FRONTEND_SERVER_ORIGIN** (Frontend Server URL)
-- **DB_USER** (Database UserName)
-- **DB_PASS** (Database Password)
-- **DB_HOST** (Database HostName)
-- **DB_PORT** (Database Port)
-- **DB_NAME** (Database Name)
-- **SMTP_USER** (SMTP UserName (email) )
-- **SMTP_SUPPORT** (Customer Support Email for Contact)
-- **SMTP_HOST** (SMTP HostName)
-- **SMTP_SENDERNAME** (SMTP Sender)
-- **SMTP_PASS** (SMTP Password)
-- **JWT_ENCRYPTION_KEY** (Key for secure encryption and decryption)
-- **JWT_AUTH_KEY** (Authorization key for Secure Frontend & Backend Communication)
-- **GOOGLE_CLIENT_ID** (Google Client ID for OAuth)
-- **GOOGLE_CLIENT_SECRET** (Google Client Secret for OAuth)
-- **STRIPE_PUBLISHABLE_KEY** (Stripe Key for Payment Gateway)
+### Contact & Support
+For questions, feedback, or support requests, reach out to: **harmanpreetsingh@programmer.net**
