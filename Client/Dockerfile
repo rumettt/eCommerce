@@ -22,10 +22,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
+# Set public build-time environment variables for Next.js compilation
+ARG NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_DOMAIN
+
+ENV NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID} \
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY} \
+    NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
@@ -39,20 +43,6 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-#Environment Variables --start
-ARG BACKEND_URL
-ENV BACKEND_URL=${BACKEND_URL}
-ARG API_SECRET
-ENV API_SECRET=${API_SECRET}
-ARG NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID
-ENV NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_FRONTEND_GOOGLE_CLIENT_ID}
-ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
-ARG NEXT_PUBLIC_DOMAIN
-ENV NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN}
-#--end
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -72,6 +62,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD HOSTNAME="0.0.0.0" node server.js
+ENV HOSTNAME="0.0.0.0"
+CMD ["node", "server.js"]
