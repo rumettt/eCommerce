@@ -1,31 +1,25 @@
 "use server"
-import axios from 'axios';
-import { sign } from 'jsonwebtoken';
-async function encrypt(key:string){
-    const encryptedKey =  await sign({},key)
-    return encryptedKey
-}
-const url = process.env.BACKEND_URL;
-const authKey = process.env.AUTH_KEY as string;
+import backendClient from '../../Helpers/backendClient';
+
 export async function categoryFilterHandler({minPrice,maxPrice,categoryID,minRating,categoryName}:{minPrice:number,maxPrice:number,categoryID:number,minRating:number,categoryName:string|string[]}) {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/filter/category/${minPrice}/${maxPrice}/${categoryID}/${minRating}/${categoryName}`,{
-        headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/filter/category/${minPrice}/${maxPrice}/${categoryID}/${minRating}/${categoryName}`);
     return {status:response.status,data:response.data}
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 export async function categoryOnlyFilterHandler({categoryID,categoryName}:{categoryID:number,categoryName:string|string[]}) {
-    const sendingKey = await encrypt(authKey);
     try {
-      const response = await axios.get(`${url}/api/filter/category-only/${categoryID}/${categoryName}`,{
-          headers: { authorization:`Bearer ${sendingKey}` },
-      });
+      const response = await backendClient.get(`/api/filter/category-only/${categoryID}/${categoryName}`);
       return {status:response.status,data:response.data}
-    } catch (error) {
-      return {status:500,error: 'Internal Server Error' }
+    } catch (error: any) {
+      if (error.response) {
+        return { status: error.response.status, data: error.response.data };
+      }
+      return { status: 500, error: 'Internal Server Error' };
     }
 };

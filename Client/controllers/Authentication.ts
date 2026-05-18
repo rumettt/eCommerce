@@ -34,9 +34,15 @@ const useAuth = () => {
             toggleServerError(); // Optionally, handle token verification errors differently
           }
           break;
+        case 401:
+        case 404:
         case 205:
           setloading(false);
           toggleIsIncorrect();
+          break;
+        default:
+          setloading(false);
+          toggleServerError();
           break;
       }
     } catch (err) {
@@ -64,9 +70,14 @@ const useAuth = () => {
           setLoggedIn(true);
           router.push('/');
           break;
+        case 409:
         case 205:
           setloading(false);
           toggleIsExists();
+          break;
+        default:
+          setloading(false);
+          toggleServerError();
           break;
       }
     } catch (err) {
@@ -120,12 +131,19 @@ const useAuth = () => {
             setLoggedIn(true);
             router.push('/');
           } catch (tokenError) {
+            setloading(false);
             toggleServerError(); // Optionally, handle token verification errors differently
           }
           break;
+        case 401:
+        case 404:
         case 205:
           setloading(false);
           toggleIsIncorrect();
+          break;
+        default:
+          setloading(false);
+          toggleServerError();
           break;
       }
     } catch (error) {

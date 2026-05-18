@@ -3,17 +3,14 @@ import { client } from '../data/DB';
 import { SMTP } from '../data/SMTP';
 import { contactSchema } from '../validators/supportValidation';
 import { matchedData, validationResult } from 'express-validator';
+import { randomUUID } from 'crypto';
 const router = express.Router();
-const date = Date();
-const IDGenerator = ()=>{
-    const ID = Math.round(Math.random() * 1000 * 1000 * 100);
-    return ID;
-}
 router.post('/contact',contactSchema,async (req:Request,res:Response)=>{
     const result = validationResult(req);
     if(result.isEmpty()){
         const {name,email,phone,method,message} = matchedData(req);
-        const queryID = IDGenerator();
+        const queryID = randomUUID();
+        const date = new Date().toUTCString();
         try {
             await client.query(`INSERT INTO contact_queries(queryid,name,email,number,method,message) VALUES ($1,$2,$3,$4,$5,$6)`,[queryID,name,email,phone,method,message])
             await SMTP.sendMail({

@@ -1,3 +1,4 @@
+"use client"
 import React, { useEffect, useRef, useState } from 'react'
 import TrendingPrimary from './TrendingSec'
 import { topDataHandler } from '@/app/api/homeData';
@@ -22,15 +23,10 @@ const TrendSection = () => {
     const [loading, setloading] = useState(true);
     async function sync(){
         const res = await topDataHandler();
-        switch (res.status) {
-          case 200:
+        if (res.status === 200) {
             data.current = res.data.data;
-            setloading(false);
-            break;
-          default:
-    
-            break;
         }
+        setloading(false);
     }
     useEffect(() => {
       sync();

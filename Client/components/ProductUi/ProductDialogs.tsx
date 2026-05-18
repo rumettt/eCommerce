@@ -83,17 +83,19 @@ const ProductDialogs = ({dialogType,setdialogType,setloading,productID,selectedR
                 setloading(false);
                 setWarningType('successful');
                 break;
+            case 409:
             case 205:
                 setdialogType(null);
                 setloading(false);
                 setWarningType('exists');
                 break;
+            case 403:
             case 210:
                 setdialogType(null);
                 setloading(false);
                 setWarningType('noOrder');
                 break;
-            case 500:
+            default:
                 setdialogType(null);
                 setloading(false);
                 setWarningType('error');
@@ -115,12 +117,13 @@ const ProductDialogs = ({dialogType,setdialogType,setloading,productID,selectedR
                     setloading(false);
                     setWarningType('successful');
                     break;
+                case 404:
                 case 205:
                     setdialogType(null);
                     setloading(false);
                     setWarningType('notExists');
                     break;
-                case 500:
+                default:
                     setdialogType(null);
                     setloading(false);
                     setWarningType('error');
@@ -143,12 +146,13 @@ const ProductDialogs = ({dialogType,setdialogType,setloading,productID,selectedR
                     setloading(false);
                     setWarningType('deleted');
                     break;
+                case 404:
                 case 205:
                     setdialogType(null);
                     setloading(false);
                     setWarningType('notExists');
                     break;
-                case 500:
+                default:
                     setdialogType(null);
                     setloading(false);
                     setWarningType('error');

@@ -108,7 +108,7 @@ const getImage = async (productID:number) => {
 };
 router.get('/category/:category',categorySchema,async (req:Request, res:Response) => {
     if(validationResult(req).isEmpty()){
-        const { category } = req.params;
+        const { category } = matchedData(req);
         const query = `SELECT categoryid, name FROM ${categoryTable} WHERE maincategory = $1`;
         const value = [category.toUpperCase()];
     
@@ -355,8 +355,8 @@ const removeDuplicates = (products: any[]) => {
 };
 router.get('/search/product/:productName',getProductNameSchema, async(req:Request,res:Response)=>{
     if(validationResult(req).isEmpty()){
-        const {productName} = req.params;
-        const filteredProductName = productName.split('-');
+        const {productName} = matchedData(req);
+        const filteredProductName = (productName as string).split('-');
         try {
             const productsPromises = filteredProductName.map(each => searchProducts(each));
             const products = await Promise.all(productsPromises);
@@ -364,13 +364,13 @@ router.get('/search/product/:productName',getProductNameSchema, async(req:Reques
             const uniqueProducts = removeDuplicates(flatProducts);
             res.status(200).json({data:uniqueProducts});
         } catch (error) {
-            res.status(500)
+            res.status(500).json({error:'Server Error'})
         }
     }else res.status(500).json({error:'Validation Error'})
 });
 router.get('/search/filtered-product/:productName/:minPrice/:maxPrice/:rating',async(req:Request,res:Response)=>{
     if(validationResult(req).isEmpty()){
-        const {productName,minPrice,maxPrice,rating} = req.params;
+        const {productName,minPrice,maxPrice,rating} = req.params as {productName:string,minPrice:string,maxPrice:string,rating:string};
         const filteredProductName = productName.split('-');
         try {
             const productsPromises = filteredProductName.map(each => searchFilteredProducts(each,minPrice,maxPrice,rating));
@@ -425,10 +425,10 @@ router.get('/sub-category/filtered-product/:categoryID/:minPrice/:maxPrice/:rati
     if(validationResult(req).isEmpty()){
         const {categoryID,minPrice,maxPrice,rating} = matchedData(req);
         try {
-            const products = await Promise.all(await fetchFilteredProducts(minPrice,maxPrice,parseInt(categoryID),rating));
+            const products = await fetchFilteredProducts(minPrice,maxPrice,parseInt(categoryID),rating);
             res.status(200).json({data:products});
         } catch (error) {
-            res.status(500)
+            res.status(500).json({error:'Server Error'})
         }
     }else res.status(500).json({error:'Validation Error'})
 });

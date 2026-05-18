@@ -21,11 +21,13 @@ const OrderConfirmation = () => {
                 found.current = true;
                 setloading(false);
                 break;
+            case 402:
             case 205:
                 found.current = true;
                 paymentPending.current = true;
                 setloading(false);
                 break;
+            case 400:
             case 210:
                 error.current = true;
                 setloading(false);

@@ -1,6 +1,6 @@
 "use server"
-import axios from 'axios';
-import { sign } from 'jsonwebtoken';
+import backendClient from '../../Helpers/backendClient';
+
 interface cart{
     cartItemID:number,
     userID:number,
@@ -15,58 +15,54 @@ interface wishlist{
     userID:number,
     productID:number,
 }
-async function encrypt(key:string){
-    const encryptedKey =  await sign({},key)
-    return encryptedKey
-}
-const url = process.env.BACKEND_URL;
-const authKey = process.env.AUTH_KEY as string;
 
 async function cartAddHandler({cartItemID,userID,productID,productPrice,colorID,sizeID,quantity}:cart) {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.post(`${url}/api/user/insert/cartitem`, {cartItemID,userID,productID,productPrice,colorID,sizeID,quantity}, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.post(`/api/user/insert/cartitem`, {cartItemID,userID,productID,productPrice,colorID,sizeID,quantity});
     return {status:response.status,message:'Successful'}
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 
 async function wishlistAddHandler({wishlistItemID,userID,productID}:wishlist) {
-    const sendingKey = await encrypt(authKey);
     try {
-      const response = await axios.post(`${url}/api/user/insert/wishlistitem`, {wishlistItemID,userID,productID}, {
-        headers: { authorization:`Bearer ${sendingKey}` },
-      });
+      const response = await backendClient.post(`/api/user/insert/wishlistitem`, {wishlistItemID,userID,productID});
       return {status:response.status,message:'Successful'}
-    } catch (error) {
-      return {status:500,error: 'Internal Server Error' }
+    } catch (error: any) {
+      if (error.response) {
+        return { status: error.response.status, data: error.response.data };
+      }
+      return { status: 500, error: 'Internal Server Error' };
     }
 };
 async function wishlistDeleteHandler({wishlistItemID,userID}:{wishlistItemID:number,userID:number}) {
-    const sendingKey = await encrypt(authKey);
     try {
-      const response = await axios.delete(`${url}/api/user/delete/wishlistitem`, {
-        headers: { authorization:`Bearer ${sendingKey}` },
+      const response = await backendClient.delete(`/api/user/delete/wishlistitem`, {
         data:{wishlistItemID,userID}
       });
       return {status:response.status,message:'Successful'}
-    } catch (error) {
-      return {status:500,error: 'Internal Server Error' }
+    } catch (error: any) {
+      if (error.response) {
+        return { status: error.response.status, data: error.response.data };
+      }
+      return { status: 500, error: 'Internal Server Error' };
     }
 };
 async function cartDeleteHandler({userID,cartItemID}:{userID:number,cartItemID:number}) {
-    const sendingKey = await encrypt(authKey);
     try {
-      const response = await axios.delete(`${url}/api/user/delete/cartitem`, {
-        headers: { authorization:`Bearer ${sendingKey}` },
+      const response = await backendClient.delete(`/api/user/delete/cartitem`, {
         data:{userID,cartItemID}
       });
       return {status:response.status,message:'Successful'}
-    } catch (error) {
-      return {status:500,error: 'Internal Server Error' }
+    } catch (error: any) {
+      if (error.response) {
+        return { status: error.response.status, data: error.response.data };
+      }
+      return { status: 500, error: 'Internal Server Error' };
     }
 };
 export {cartAddHandler,wishlistAddHandler,wishlistDeleteHandler,cartDeleteHandler}

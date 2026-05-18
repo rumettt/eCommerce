@@ -1,20 +1,30 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
+
 const rateLimiter = new RateLimiterMemory({
-  points: 20, // maximum number of requests allowed
-  duration: 1, // time frame in seconds
+  points: 100, // requests
+  duration: 1, // per second
 });
-const rateLimiterMiddleware = (req:any, res:Response, next:NextFunction) => {
-  rateLimiter.consume(req.ip)
-    .then(() => {
-        // request allowed, 
-        // proceed with handling the request
-        next();
-    })
-    .catch(() => {
-        // request limit exceeded, 
-        // respond with an appropriate error message
-        res.status(429).send('Too Many Requests');
-    });
+
+// Stricter limiter for authentication endpoints: 10 attempts per minute
+const authRateLimiter = new RateLimiterMemory({
+  points: 500,
+  duration: 60,
+});
+
+const getIP = (req: Request): string =>
+  req.ip || req.socket.remoteAddress || 'unknown';
+
+const rateLimiterMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  rateLimiter.consume(getIP(req))
+    .then(() => next())
+    .catch(() => res.status(429).json({ error: 'Too Many Requests' }));
 };
-export default rateLimiterMiddleware;
+
+const authRateLimiterMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  authRateLimiter.consume(getIP(req))
+    .then(() => next())
+    .catch(() => res.status(429).json({ error: 'Too many attempts. Please try again later.' }));
+};
+
+export { rateLimiterMiddleware as default, authRateLimiterMiddleware };

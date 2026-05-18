@@ -35,10 +35,10 @@ const EmailPasswordOtpSchema = checkSchema({
         in: ['body'],
         isString:true,
         isLength: {
-            options: { min: 4, max: 4 },
-            errorMessage: 'OTP must be exactly 4 digits'
+            options: { min: 6, max: 6 },
+            errorMessage: 'OTP must be exactly 6 digits'
         },
-        errorMessage: 'OTP must be a 4-digit integer'
+        errorMessage: 'OTP must be a 6-digit string'
     }
 });
 

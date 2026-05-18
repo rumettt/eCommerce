@@ -33,10 +33,12 @@ const ForgotPass = () => {
                 setSuccess(true);
                 setloading(false);
                 break;
+            case 400:
             case 205:
                 setIncorrectOTP(true);
                 setloading(false);
                 break;
+            case 410:
             case 210:
                 setExpiredOTP(true);
                 setloading(false);
@@ -62,12 +64,13 @@ const ForgotPass = () => {
                     setotpPopup(true);
                     setloading(false);
                     break;
+                case 404:
                 case 205:
                     toggleIsIncorrect();
                     setloading(false);
                     break;
                 default:
-                    toggleServerError;
+                    toggleServerError();
                     setloading(false);
                     break;
             }
@@ -82,7 +85,7 @@ const ForgotPass = () => {
                     setloading(false);
                     break;
                 default:
-                    toggleServerError;
+                    toggleServerError();
                     setloading(false);
                     break;
         }

@@ -1,12 +1,26 @@
 import express, { Request, Response } from 'express';
 import { client } from '../data/DB';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { matchedData, validationResult } from 'express-validator';
 import { AddressUpdateSchema, cartQtyUpdate, defaultUpdateSchema, insertAddressSchema, userUpdateSchema } from '../validators/userUpdateValidation';
+import { randomUUID } from 'crypto';
 
 const saltRounds = 10;
 const router = express.Router();
 const userTable = 'users';
+const JWT_SECRET = process.env.JWT_ENCRYPTION_KEY as string;
+
+function getAuthenticatedUserID(req: Request): number | null {
+    const token = req.headers['authorization']?.split(' ')[1] || req.headers['x-user-token'] as string;
+    if (!token) return null;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userID: number };
+        return decoded.userID;
+    } catch {
+        return null;
+    }
+}
 
 
 // Update user route
@@ -14,6 +28,12 @@ router.put('/user',userUpdateSchema, async (req: Request, res: Response) => {
     const result = validationResult(req);
     if(result.isEmpty()){
         const { userName, email, password, mobile_number, dob, userID } = matchedData(req);
+
+        const authenticatedUserID = getAuthenticatedUserID(req);
+        if (!authenticatedUserID || authenticatedUserID !== userID) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const updatedIP = req.ip; // Capture the IP address from the request
 
         try {
@@ -72,6 +92,11 @@ router.put('/user/update/address',AddressUpdateSchema, async (req: Request, res:
     const result = validationResult(req);
     if(result.isEmpty()){
         const { userID, addressID, addressType, contactNumber, addressLine1, addressLine2, city, state, country, postalCode, userName } = matchedData(req);
+
+        const authenticatedUserID = getAuthenticatedUserID(req);
+        if (!authenticatedUserID || authenticatedUserID !== userID) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
         const updateQuery = `
             UPDATE addresses 
             SET addresstype = $1, contactnumber = $2, addressline1 = $3, addressline2 = $4, city = $5, state = $6, country = $7, postalcode = $8, username = $9 
@@ -92,16 +117,18 @@ router.put('/user/update/address',AddressUpdateSchema, async (req: Request, res:
         res.status(500).json({ message: 'Validation error' });
     }
 });
-const IDGenerator = ()=>{
-    const ID = Math.round(Math.random() * 1000 * 1000 * 100);
-    return ID;
-}
 // Add User Address
 router.post('/user/insert/address',insertAddressSchema, async (req: Request, res: Response) => {
     const result = validationResult(req);
     if(result.isEmpty()){
         const { addressType, contactNumber, addressLine1, addressLine2, city, state, country, postalCode, userName, userID } = matchedData(req);
-        const addressID = IDGenerator();
+
+        const authenticatedUserID = getAuthenticatedUserID(req);
+        if (!authenticatedUserID || authenticatedUserID !== userID) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const addressID = randomUUID();
         let is_default = false;
         const insertQuery = `
             INSERT INTO addresses (addresstype, userid, contactnumber, addressline1, addressline2, city, state, country, postalcode, username, addressid,is_default) 
@@ -131,14 +158,24 @@ router.delete('/user/delete/address',defaultUpdateSchema, async (req: Request, r
     if(result.isEmpty()){
         const { addressID, userID } = matchedData(req);
 
-        const deleteQuery = `
-            DELETE FROM addresses 
-            WHERE addressid = $1 AND userid = $2
-        `;
-        const values = [addressID, userID];
-    
+        const authenticatedUserID = getAuthenticatedUserID(req);
+        if (!authenticatedUserID || authenticatedUserID !== userID) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         try {
-            await client.query(deleteQuery, values);
+            // Prevent deleting the default address
+            const checkDefaultQuery = `SELECT is_default FROM addresses WHERE addressid = $1 AND userid = $2`;
+            const checkResult = await client.query(checkDefaultQuery, [addressID, userID]);
+            if (checkResult.rows.length === 0) {
+                return res.status(404).json({ message: 'Address not found' });
+            }
+            if (checkResult.rows[0].is_default) {
+                return res.status(400).json({ message: 'Cannot delete the default address. Set another address as default first.' });
+            }
+
+            const deleteQuery = `DELETE FROM addresses WHERE addressid = $1 AND userid = $2`;
+            await client.query(deleteQuery, [addressID, userID]);
             res.status(200).json({ message: 'Address deleted successfully' });
         } catch (error) {
             res.status(500).json({ message: 'Internal Server Error' });
@@ -153,35 +190,31 @@ router.post('/user/set-default-address',defaultUpdateSchema, async (req:Request,
     const result = validationResult(req);
     if(result.isEmpty()){
         const { addressID, userID } = matchedData(req);
+
+        const authenticatedUserID = getAuthenticatedUserID(req);
+        if (!authenticatedUserID || authenticatedUserID !== userID) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const conn = await client.connect();
         try {
-          // Begin transaction
-          await client.query('BEGIN');
-      
-          // Set all is_default to false for the given userid
-          const resetDefaultQuery = `
-            UPDATE addresses
-            SET is_default = false
-            WHERE userid = $1 AND is_default = true
-          `;
-          await client.query(resetDefaultQuery, [userID]);
-      
-          // Set is_default to true for the given addressid and userid
-          const setDefaultQuery = `
-            UPDATE addresses
-            SET is_default = true
-            WHERE addressid = $1 AND userid = $2
-          `;
-          await client.query(setDefaultQuery, [addressID, userID]);
-      
-          // Commit transaction
-          await client.query('COMMIT');
-      
+          await conn.query('BEGIN');
+          await conn.query(
+            `UPDATE addresses SET is_default = false WHERE userid = $1 AND is_default = true`,
+            [userID]
+          );
+          await conn.query(
+            `UPDATE addresses SET is_default = true WHERE addressid = $1 AND userid = $2`,
+            [addressID, userID]
+          );
+          await conn.query('COMMIT');
           res.sendStatus(200);
         } catch (error) {
-          // Rollback transaction in case of error
-          await client.query('ROLLBACK');
+          await conn.query('ROLLBACK');
           console.error('Error setting default address:', error);
           res.status(500).json({ error: 'Internal Server Error' });
+        } finally {
+          conn.release();
         }
     }else{
         console.log(result);
@@ -193,12 +226,21 @@ router.post('/user/cart-quantity',cartQtyUpdate,async (req:Request,res:Response)
     if(result.isEmpty()){
         const {cartItemID,productID,userID,action} = matchedData(req);
         try {
-            const incrementQuery = `UPDATE cartitems SET quantity = quantity + 1 WHERE userid = $1 AND cartitemid = $2 AND productid = $3`
-            const decrementQuery = `UPDATE cartitems SET quantity = quantity - 1 WHERE userid = $1 AND cartitemid = $2 AND productid = $3`
+            const incrementQuery = `UPDATE cartitems SET quantity = quantity + 1 WHERE userid = $1 AND cartitemid = $2 AND productid = $3`;
             if(action==='increment'){
                 await client.query(incrementQuery,[userID,cartItemID,productID]);
                 return res.status(200).json({message:'Successfully incremented'});
             }else{
+                // Check current quantity before decrementing
+                const checkQuery = `SELECT quantity FROM cartitems WHERE userid = $1 AND cartitemid = $2 AND productid = $3`;
+                const checkResult = await client.query(checkQuery,[userID,cartItemID,productID]);
+                if(checkResult.rows.length === 0) {
+                    return res.status(404).json({error:'Cart item not found'});
+                }
+                if(checkResult.rows[0].quantity <= 1) {
+                    return res.status(400).json({error:'Quantity cannot be less than 1'});
+                }
+                const decrementQuery = `UPDATE cartitems SET quantity = quantity - 1 WHERE userid = $1 AND cartitemid = $2 AND productid = $3`;
                 await client.query(decrementQuery,[userID,cartItemID,productID]);
                 return res.status(200).json({message:'Successfully decremented'});
             }

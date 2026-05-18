@@ -50,7 +50,7 @@ interface Product {
 }
 const CategoryPage = () => {
     const categoryCapture = useParams();
-    const specificCategory:string|string[] = categoryCapture.category;
+    const specificCategory:string|string[] = categoryCapture.category ?? '';
     const currDirectory = ['Categories',specificCategory];
     const [sidebarLoading, setsidebarLoading] = useState(true);
     const [loading, setloading] = useState(true)

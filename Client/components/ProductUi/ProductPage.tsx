@@ -223,12 +223,12 @@ const ProductPage = () => {
         </div>
         <div className='flex justify-center gap-10 flex-col items-center lg:flex-row'>
             <div className='flex img-wrapper flex-col gap-5 w-[90%] md:w-[60%] px-2 lg:w-[600px] lg:h-[600px] rounded-xl items-center'>
-                <img className='border-[1px] rounded-xl w-[100%] lg:w-[600px] lg:h-[600px] hover-zoom' src={selectedImage.imgLink} alt={selectedImage.imgAlt}/>
+                <img className='border-[1px] rounded-xl w-[100%] lg:w-[600px] lg:h-[600px] hover-zoom' src={selectedImage.imgLink || data.imglink || undefined} alt={selectedImage.imgAlt || data.imgalt}/>
                 <div className='flex gap-5 justify-center'>
                 {data.imgcollection.map((each, index) => (
                     <img 
                         key={index}
-                        src={each.imglink}
+                        src={each.imglink || undefined}
                         alt={each.imgalt}
                         height={75}
                         width={75}

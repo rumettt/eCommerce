@@ -1,64 +1,58 @@
 'use server'
-import axios from 'axios';
-import { sign } from 'jsonwebtoken';
-async function encrypt(key:string){
-    const encryptedKey =  await sign({},key)
-    return encryptedKey
-}
-const url = process.env.BACKEND_URL;
-const authKey = process.env.AUTH_KEY as string;
+import backendClient from '../../Helpers/backendClient';
+
 export async function bannerDataHandler() {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/home/banner`, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/home/banner`);
     return {status:response.status,banners:response.data};
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 export async function dealDataHandler() {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/home/deals`, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/home/deals`);
     return {status:response.status,deals:response.data};
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 export async function topDataHandler() {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/home/trending`, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/home/trending`);
     return {status:response.status,data:response.data};
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 export async function sidebarDataHandler() {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/home/best-sellers`, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/home/best-sellers`);
     return {status:response.status,data:response.data};
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
 export async function homeProductsDataHandler() {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.get(`${url}/api/home/products`, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.get(`/api/home/products`);
     return {status:response.status,data:response.data};
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };

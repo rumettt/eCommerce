@@ -3,12 +3,9 @@ import { client } from '../data/DB';
 import jwt from 'jsonwebtoken';
 import { AddressInsertSchema, cartActionSchema, cartItemSchema, orderSchema, userIDSchema, userTokenSchema, wishlistActionSchema, wishlistRemoveSchema } from '../validators/userDetailsValidation';
 import { matchedData, validationResult } from 'express-validator';
+import { randomUUID } from 'crypto';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_ENCRYPTION_KEY as string;
-const IDGenerator = ()=>{
-    const ID = Math.round(Math.random() * 1000 * 1000 * 100);
-    return ID;
-}
 interface JwtPayload {
     userID: number;
     iat: number;
@@ -249,7 +246,7 @@ router.post('/user/insert/address',AddressInsertSchema,async(req:Request,res:Res
     const result = validationResult(req);
     if(result.isEmpty()){
         const {userID,addressType,userName,contactNumber,addressLine1,addressLine2,city,state,country,postalCode} = matchedData(req);
-        const addressID = IDGenerator();
+        const addressID = randomUUID();
         const query = `INSERT INTO addresses(addressid,userid,addresstype,username,contactnumber,addressline1,addressline2,city,state,country,postalcode,is_default)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,false)`
         const values = [addressID,userID,addressType,userName,contactNumber,addressLine1,addressLine2,city,state,country,postalCode];
@@ -297,7 +294,7 @@ router.post('/user/insert/cartitem',cartItemSchema,async(req:Request,res:Respons
     const result = validationResult(req);
     if(result.isEmpty()){
         const { userID, productID, quantity, sizeID, colorID } = matchedData(req);
-        const cartItemID = IDGenerator();
+        const cartItemID = randomUUID();
         
         const checkQuery = `
             SELECT cartitemid, quantity 

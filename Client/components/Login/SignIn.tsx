@@ -79,7 +79,13 @@ const SignIn = () => {
                                 <div className='flex justify-between gap-2'>
                                     <button onClick={()=>{setloading(true);googleLogin()}} className='px-6 w-4/6 mx-auto py-3 border-[1px] border-gray-200 rounded-lg text-sm font-medium transition-colors duration-150 hover:bg-gray-700 hover:text-white'>
                                         <div className='flex items-center justify-center gap-2'>
-                                            <img width={20} height={5} src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1024px-Google_%22G%22_logo.svg.png'/>Google
+                                            <svg className="w-5 h-5" viewBox="0 0 48 48">
+                                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                                                <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.55 2.86-2.18 5.29-4.62 6.92l7.17 5.56C43.5 35.8 46.5 30.3 46.5 24z"/>
+                                                <path fill="#34A853" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z"/>
+                                                <path fill="#FBBC05" d="M24 38.5c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48c6.48 0 11.93-2.13 15.89-5.81l-7.17-5.56c-2.3 1.54-5.23 2.37-8.72 2.37z"/>
+                                            </svg>
+                                            Google
                                         </div>
                                     </button>
                                 </div>

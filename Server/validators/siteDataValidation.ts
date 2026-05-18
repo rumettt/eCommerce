@@ -14,12 +14,20 @@ const filterSchema = checkSchema({
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Min Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Min Price must be a float'
     },
     maxPrice: {
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Max Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Max Price must be a float'
     },
     categoryID: {
@@ -90,6 +98,10 @@ const ProductFilterSchema = checkSchema({
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Min Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Min Price must be a float',
         escape:true
     },
@@ -97,6 +109,10 @@ const ProductFilterSchema = checkSchema({
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Max Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Max Price must be a float',
         escape:true
     },
@@ -144,6 +160,10 @@ const categoryFilterSchema = checkSchema({
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Min Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Min Price must be a float',
         escape:true
     },
@@ -151,6 +171,10 @@ const categoryFilterSchema = checkSchema({
         in: ['params'],
         isFloat: true,
         toFloat: true,
+        custom: {
+            options: (value) => value >= 0 && value <= 1000000,
+            errorMessage: 'Max Price must be between 0 and 1,000,000'
+        },
         errorMessage: 'Max Price must be a float',
         escape:true
     },

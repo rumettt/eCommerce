@@ -1,37 +1,33 @@
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import 'dotenv/config';
 
-type DetailsType = {
-  user: string;
-  password: string;
-  host: string;
-  port: number;
-  database: string;
-};
-
-const details: DetailsType = {
+const client = new Pool({
   user: process.env.DB_USER || '',
   password: process.env.DB_PASS || '',
   host: process.env.DB_HOST || '',
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || '',
-};
-
-const client = new Client({
-  user: details.user,
-  password: details.password,
-  host: details.host,
-  port: details.port,
-  database: details.database,
+  max: 10,                // maximum pool size
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 const connectDB = async () => {
-  try {
-    await client.connect();
-    console.log('Connected to the database');
-  } catch (err:any) {
-    console.error('Connection error', err.stack);
-    process.exit(1); // Exit the process with a failure code
+  const maxRetries = 10;
+  const retryDelayMs = 3000;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await client.query('SELECT 1');
+      console.log('Connected to the database');
+      return;
+    } catch (err: any) {
+      console.error(`DB connection attempt ${attempt}/${maxRetries} failed:`, err.message);
+      if (attempt === maxRetries) {
+        console.error('Could not connect to database after max retries. Exiting.');
+        process.exit(1);
+      }
+      await new Promise(res => setTimeout(res, retryDelayMs));
+    }
   }
 };
 

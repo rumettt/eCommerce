@@ -29,11 +29,11 @@ app.get('/', (req: Request, res: Response) => {
 });
 app.use('/api', routes);
 // Function to start the server
-const startServer = async () => {// Ensure the database connection is established
+const startServer = async () => {
+  await connectDB();
   app.listen(port, () => {
     console.log(`[server]: Server is running at Port ${port}`);
   });
-  await connectDB();
 };
 
 startServer();

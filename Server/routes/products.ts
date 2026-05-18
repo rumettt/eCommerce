@@ -1,12 +1,9 @@
 import express, { Request, Response } from 'express';
 import { client } from '../data/DB';
-import { createReviewSchema, deleteReviewSchema, editReviewSchema, getReviewSchema, productIDSchema } from '../validators/productsValidation';
+import { createProductColorSchema, createProductImageSchema, createProductSchema, createProductSizeSchema, createReviewSchema, deleteReviewSchema, editReviewSchema, getReviewSchema, productIDSchema } from '../validators/productsValidation';
 import { matchedData, validationResult } from 'express-validator';
+import { randomUUID } from 'crypto';
 const router = express.Router();
-const IDGenerator = ()=>{
-    const ID = Math.round(Math.random() * 1000 * 1000 * 100);
-    return ID;
-}
 async function calculateStarAverage(productID:string){
     const query = `SELECT rating FROM reviews WHERE productid = $1`
     const ratingQuery = `UPDATE productparams SET stars = $2 WHERE productid = $1`
@@ -26,13 +23,15 @@ async function calculateStarAverage(productID:string){
         return;
     }
 };
-router.post('/product/create',async (req:Request,res:Response)=>{
-    const {title,description,price,discount,stock,tags,imgLink,imgAlt,isSale,isNew,isDiscount,categoryID} = req.body;
+router.post('/product/create',createProductSchema,async (req:Request,res:Response)=>{
+    const result = validationResult(req);
+    if(!result.isEmpty()) return res.status(400).json({ message: 'Validation error', errors: result.array() });
+    const {title,description,price,discount,stock,tags,imgLink,imgAlt,isSale,isNew,isDiscount,categoryID} = matchedData(req);
     const productQuery = `INSERT INTO products (productid, title, description, categoryid, price, discount, stock, tags, imgid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
     const productImagesQuery = `INSERT INTO productimages (imageid, productid, imglink, imgalt, isprimary) VALUES ($1, $2, $3, $4, $5)`;
     const productParamsQuery = `INSERT INTO productparams (productid, issale, isnew, isdiscount) VALUES ($1, $2, $3, $4)`;
-    const productID = IDGenerator();
-    const imageID = IDGenerator();
+    const productID = randomUUID();
+    const imageID = randomUUID();
     try {
         await client.query(productQuery,[productID,title,description,categoryID,price,discount,stock,tags,imageID]);
         await client.query(productImagesQuery,[imageID,productID,imgLink,imgAlt,true]);
@@ -42,9 +41,11 @@ router.post('/product/create',async (req:Request,res:Response)=>{
         return res.status(500).json({message:'Internal Server Error'});
     }
     });
-router.post('/product/create/image',async (req:Request,res:Response)=>{
-    const {productID,imgLink,imgAlt} = req.body;
-    const imageID = IDGenerator();
+router.post('/product/create/image',createProductImageSchema,async (req:Request,res:Response)=>{
+    const result = validationResult(req);
+    if(!result.isEmpty()) return res.status(400).json({ message: 'Validation error', errors: result.array() });
+    const {productID,imgLink,imgAlt} = matchedData(req);
+    const imageID = randomUUID();
     const productImagesQuery = `INSERT INTO productimages (imageid, productid, imglink, imgalt, isprimary) VALUES ($1, $2, $3, $4, $5)`;
     try {
         await client.query(productImagesQuery,[imageID,productID,imgLink,imgAlt,false]);
@@ -53,9 +54,11 @@ router.post('/product/create/image',async (req:Request,res:Response)=>{
         res.status(500).json({message:'Internal Server Error'});
     }
 });
-router.post('/product/create/size',async (req:Request,res:Response)=>{
-    const {productID,sizeName,inStock} = req.body;
-    const sizeID = IDGenerator();
+router.post('/product/create/size',createProductSizeSchema,async (req:Request,res:Response)=>{
+    const result = validationResult(req);
+    if(!result.isEmpty()) return res.status(400).json({ message: 'Validation error', errors: result.array() });
+    const {productID,sizeName,inStock} = matchedData(req);
+    const sizeID = randomUUID();
     const productSizesQuery = `INSERT INTO productparams (sizeid,productid,sizename,instock) VALUES ($1, $2, $3, $4)`;
     try {
         await client.query(productSizesQuery,[sizeID,productID,sizeName,inStock]);
@@ -64,9 +67,11 @@ router.post('/product/create/size',async (req:Request,res:Response)=>{
         res.status(500).json({message:'Internal Server Error'});
     }
 });
-router.post('/product/create/color',async (req:Request,res:Response)=>{
-    const {productID,colorName,colorClass} = req.body;
-    const colorID = IDGenerator();
+router.post('/product/create/color',createProductColorSchema,async (req:Request,res:Response)=>{
+    const result = validationResult(req);
+    if(!result.isEmpty()) return res.status(400).json({ message: 'Validation error', errors: result.array() });
+    const {productID,colorName,colorClass} = matchedData(req);
+    const colorID = randomUUID();
     const productColorsQuery = `INSERT INTO productcolors (colorid, productid, colorname, colorclass) VALUES ($1, $2, $3, $4)`;
     try {
         await client.query(productColorsQuery,[colorID,productID,colorName,colorClass]);
@@ -135,13 +140,16 @@ router.get('/product/:productID',productIDSchema,async (req:Request,res:Response
                 INNER JOIN categories ON products.categoryid = categories.categoryid
                 WHERE products.productid = $1 AND productimages.isprimary = true`,[productID]
             );
+            const assignedData = result.rows[0];
+            if (!assignedData) {
+                return res.status(404).json({message:'Not Found'});
+            }
             const [colors,sizes,images] = await Promise.all([
                 getColors(productID),
                 getSizes(productID),
                 getImages(productID)
             ])
             const [reviewCounts,reviews] = await review(productID);
-            const assignedData = result.rows[0];
             const data = {
                 productid:assignedData.productid,
                 title:assignedData.title,
@@ -180,7 +188,7 @@ router.post('/review/create',createReviewSchema,async (req:Request,res:Response)
         try {
             const response = await client.query(checkQuery,checkValue);
             if(response.rows.length > 0){
-                return res.status(205).json({message:'Review Already Exists'})
+                return res.status(409).json({message:'Review Already Exists'})
             }
         } catch (error) {
             return res.status(500).json({error:'Server Error'});
@@ -190,12 +198,12 @@ router.post('/review/create',createReviewSchema,async (req:Request,res:Response)
         try {
             const response = await client.query(orderCheck,orderValue);
             if(response.rows.length === 0){
-                return res.status(210).json({message:'Order does not exist'})
+                return res.status(403).json({message:'Order does not exist'})
             }
         } catch (error) {
             return res.status(500).json({error:'Server Error'});
         }
-        const reviewID = IDGenerator();
+        const reviewID = randomUUID();
         const query = `INSERT INTO reviews (reviewid,userid,productid,rating,title,comment) VALUES ($1,$2,$3,$4,$5,$6)`;
         const value = [reviewID,userID,productID,rating,title,comment];
         try {
@@ -221,7 +229,7 @@ router.patch('/review/edit',editReviewSchema,async (req:Request,res:Response)=>{
         try {
             const response = await client.query(checkQuery,checkValue);
             if(response.rows.length===0){
-                return res.status(205).json({message:'Review Does Not Exist'})
+                return res.status(404).json({message:'Review Does Not Exist'})
             }
         } catch (error) {
             return res.status(500).json({error:'Server Error'});
@@ -248,7 +256,7 @@ router.delete('/review/delete',deleteReviewSchema,async (req:Request,res:Respons
         try {
             const response = await client.query(checkQuery,checkValue);
             if(response.rows.length===0){
-                return res.status(205).json({message:'Review Does Not Exist'})
+                return res.status(404).json({message:'Review Does Not Exist'})
             }
         } catch (error) {
             return res.status(500).json({error:'Server Error'});

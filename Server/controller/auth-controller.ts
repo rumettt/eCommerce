@@ -7,7 +7,8 @@ export const googleAuth = async (code:string) => {
         oauth2Client.setCredentials(googleRes.tokens);
 
         const userRes = await axios.get(
-            `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`
+            'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+            { headers: { Authorization: `Bearer ${googleRes.tokens.access_token}` } }
         );
         const query = `
                 SELECT userid,username,email,mobile_number,dob FROM "users" WHERE email = $1;

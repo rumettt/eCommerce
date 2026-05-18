@@ -3,12 +3,9 @@ import { client } from '../data/DB';
 import Stripe from 'stripe';
 import {orderCreationSchema,orderCreationSchema2,checkoutSchema,OrderIDSchema,createPaymentIntent} from '../validators/productCheckoutValidator';
 import { matchedData, validationResult } from 'express-validator';
+import { randomUUID } from 'crypto';
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_PUBLISHABLE_KEY as string);
-const IDGenerator = () => {
-  const ID = Math.round(Math.random() * 1000 * 1000 * 100);
-  return ID;
-};
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 function getDateTimeFiveDaysFromNow():string {
   const today = new Date();
   const fiveDaysFromNow = new Date(today);
@@ -28,12 +25,12 @@ router.post('/payment-on-delivery/create-order',orderCreationSchema, async (req:
   if(result.isEmpty()){
     const { userid, productid, colorid, sizeid} = matchedData(req);
 
-    const orderid = IDGenerator();
-    const shippingid = IDGenerator();
-    const paymentid = IDGenerator();
-    const transactionid = `TS-${IDGenerator()}-${paymentid}-${orderid}`;
-    const orderitemid = IDGenerator();
-    const trackingnumber = `IN${orderid}-${paymentid}-${transactionid}`
+    const orderid = randomUUID();
+    const shippingid = randomUUID();
+    const paymentid = randomUUID();
+    const transactionid = `TS-${randomUUID()}`;
+    const orderitemid = randomUUID();
+    const trackingnumber = `IN-${orderid}`;
     const deliveryDate = getDateTimeFiveDaysFromNow();
     const paymentCharge = 15;
     try {
@@ -61,41 +58,37 @@ router.post('/payment-on-delivery/create-order',orderCreationSchema, async (req:
       const addressid = addressResult.rows[0].addressid;
       const amount = productResult.rows[0].discount;
       const shippingcharge = 5;
-      
-      // Insert into orders table
-      const orderQuery = `
-        INSERT INTO orders (orderid, userid, totalamount, orderstatus, order_code)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING *
-      `;
       const totalAmount = (shippingcharge+paymentCharge+parseFloat(amount)).toFixed(2);
-      await client.query(orderQuery, [orderid, userid, totalAmount, 'Confirmed', 'IN']);
 
-      // Insert into shipping table
-      const shippingQuery = `
-        INSERT INTO shipping (shippingid, orderid, addressid, shippingmethod, shippingcost, trackingnumber, deliveredat)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `;
-      await client.query(shippingQuery, [shippingid, orderid, addressid, 'Express', shippingcharge, trackingnumber,deliveryDate]);
-
-      // Insert into payments table
-      const paymentQuery = `
-        INSERT INTO payments (paymentid, orderid, paymentmethod, paymentstatus, amount, transactionid,billingaddress)
-        VALUES ($1, $2, $3, $4, $5, $6,$7)
-        RETURNING *
-      `;
-      await client.query(paymentQuery, [paymentid, orderid, 'Payment on Delivery', 'Pending', amount, transactionid,addressid]);
-
-      // Insert into orderitems table
-      await client.query(`
-          INSERT INTO orderitems (orderitemid, orderid, productid, quantity, shippingid, paymentid, colorid, sizeid)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [orderitemid, orderid, productid, 1, shippingid, paymentid, colorid, sizeid]);
-
-      const updateViewQuery = `UPDATE productparams SET sold = sold + 1 WHERE productid = $1`
-      await client.query(updateViewQuery,[productid])
-      res.status(200).json({orderid})
+      const conn = await client.connect();
+      try {
+        await conn.query('BEGIN');
+        await conn.query(
+          `INSERT INTO orders (orderid, userid, totalamount, orderstatus, order_code) VALUES ($1, $2, $3, $4, $5)`,
+          [orderid, userid, totalAmount, 'Confirmed', 'IN']
+        );
+        await conn.query(
+          `INSERT INTO shipping (shippingid, orderid, addressid, shippingmethod, shippingcost, trackingnumber, deliveredat) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [shippingid, orderid, addressid, 'Express', shippingcharge, trackingnumber, deliveryDate]
+        );
+        await conn.query(
+          `INSERT INTO payments (paymentid, orderid, paymentmethod, paymentstatus, amount, transactionid, billingaddress) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [paymentid, orderid, 'Payment on Delivery', 'Pending', amount, transactionid, addressid]
+        );
+        await conn.query(
+          `INSERT INTO orderitems (orderitemid, orderid, productid, quantity, shippingid, paymentid, colorid, sizeid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [orderitemid, orderid, productid, 1, shippingid, paymentid, colorid, sizeid]
+        );
+        await conn.query(`UPDATE productparams SET sold = sold + 1 WHERE productid = $1`, [productid]);
+        await conn.query('COMMIT');
+        res.status(200).json({orderid});
+      } catch (error) {
+        await conn.query('ROLLBACK');
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      } finally {
+        conn.release();
+      }
     } catch (error) {
       console.error('Error creating order:', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -104,7 +97,7 @@ router.post('/payment-on-delivery/create-order',orderCreationSchema, async (req:
   {
       res.status(500).json({ message: 'Validation error' });
   }
-  
+
 });
 
 router.post('/card/create-order',orderCreationSchema2, async (req:Request, res:Response) => {
@@ -112,14 +105,14 @@ router.post('/card/create-order',orderCreationSchema2, async (req:Request, res:R
   if(result.isEmpty()){
     const { userid, productid, colorid, sizeid, paymentid , paymentStatus} = matchedData(req);
     const paymentState = paymentStatus==='Succeeded' ? 'Confirmed' : 'Pending';
-    const orderid = IDGenerator();
-    const paymentID = IDGenerator();
-    const shippingid = IDGenerator();
-    const transactionid = `TS-${IDGenerator()}-${paymentID}-${orderid}`;
-    const orderitemid = IDGenerator();
-    const trackingnumber = `IN${orderid}-${paymentID}-${transactionid}`
+    const orderid = randomUUID();
+    const paymentID = randomUUID();
+    const shippingid = randomUUID();
+    const transactionid = `TS-${randomUUID()}`;
+    const orderitemid = randomUUID();
+    const trackingnumber = `IN-${orderid}`;
     const deliveryDate = getDateTimeFiveDaysFromNow();
-    const paymentCharge = 0;
+    const shippingcharge = 5;
     try {
       // Check if product with given productid, colorid, and sizeid exists
       const productQuery = `
@@ -130,7 +123,7 @@ router.post('/card/create-order',orderCreationSchema2, async (req:Request, res:R
         WHERE p.productid = $1
       `;
       const productResult = await client.query(productQuery, [productid, colorid, sizeid]);
-  
+
       if (productResult.rows.length === 0) {
         return res.status(404).json({ error: 'Product not found' });
       }
@@ -138,48 +131,43 @@ router.post('/card/create-order',orderCreationSchema2, async (req:Request, res:R
         SELECT addressid FROM addresses WHERE userid = $1 AND is_default = true
       `;
       const addressResult = await client.query(addressQuery, [userid]);
-  
+
       if (addressResult.rows.length === 0) {
         return res.status(404).json({ error: 'Address not found' });
       }
       const addressid = addressResult.rows[0].addressid;
       const amount = productResult.rows[0].discount;
-      const shippingcharge = 5;
-      
-      // Insert into orders table
-      const orderQuery = `
-        INSERT INTO orders (orderid, userid, totalamount, orderstatus, order_code)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING *
-      `;
-      const totalAmount = (shippingcharge+paymentCharge+parseFloat(amount)).toFixed(2);
-      await client.query(orderQuery, [orderid, userid, totalAmount, 'Confirmed', 'IN']);
-  
-      // Insert into shipping table
-      const shippingQuery = `
-        INSERT INTO shipping (shippingid, orderid, addressid, shippingmethod, shippingcost, trackingnumber, deliveredat)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `;
-      await client.query(shippingQuery, [shippingid, orderid, addressid, 'Express', shippingcharge, trackingnumber,deliveryDate]);
-  
-      // Insert into payments table
-      const paymentQuery = `
-        INSERT INTO payments (paymentid, orderid, paymentmethod, paymentstatus, amount, transactionid,billingaddress,paymentgateway_id)
-        VALUES ($1, $2, $3, $4, $5, $6,$7,$8)
-        RETURNING *
-      `;
-      await client.query(paymentQuery, [paymentID, orderid, 'Card', paymentState, amount, transactionid,addressid,paymentid]);
-  
-      // Insert into orderitems table
-      await client.query(`
-          INSERT INTO orderitems (orderitemid, orderid, productid, quantity, shippingid, paymentid, colorid, sizeid)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [orderitemid, orderid, productid, 1, shippingid, paymentID, colorid, sizeid]);
-  
-      const updateViewQuery = `UPDATE productparams SET sold = sold + 1 WHERE productid = $1`
-      await client.query(updateViewQuery,[productid])
-      res.status(200).json({orderid})
+      const totalAmount = (shippingcharge+parseFloat(amount)).toFixed(2);
+
+      const conn = await client.connect();
+      try {
+        await conn.query('BEGIN');
+        await conn.query(
+          `INSERT INTO orders (orderid, userid, totalamount, orderstatus, order_code) VALUES ($1, $2, $3, $4, $5)`,
+          [orderid, userid, totalAmount, 'Confirmed', 'IN']
+        );
+        await conn.query(
+          `INSERT INTO shipping (shippingid, orderid, addressid, shippingmethod, shippingcost, trackingnumber, deliveredat) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [shippingid, orderid, addressid, 'Express', shippingcharge, trackingnumber, deliveryDate]
+        );
+        await conn.query(
+          `INSERT INTO payments (paymentid, orderid, paymentmethod, paymentstatus, amount, transactionid, billingaddress, paymentgateway_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [paymentID, orderid, 'Card', paymentState, amount, transactionid, addressid, paymentid]
+        );
+        await conn.query(
+          `INSERT INTO orderitems (orderitemid, orderid, productid, quantity, shippingid, paymentid, colorid, sizeid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [orderitemid, orderid, productid, 1, shippingid, paymentID, colorid, sizeid]
+        );
+        await conn.query(`UPDATE productparams SET sold = sold + 1 WHERE productid = $1`, [productid]);
+        await conn.query('COMMIT');
+        res.status(200).json({orderid});
+      } catch (error) {
+        await conn.query('ROLLBACK');
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      } finally {
+        conn.release();
+      }
     } catch (error) {
       console.error('Error creating order:', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -188,7 +176,7 @@ router.post('/card/create-order',orderCreationSchema2, async (req:Request, res:R
   {
       res.status(500).json({ message: 'Validation error' });
   }
-  
+
 });
 router.get('/orders/status/:orderID',OrderIDSchema, async (req:Request, res:Response) => {
   const result = validationResult(req);
@@ -211,15 +199,15 @@ router.get('/orders/status/:orderID',OrderIDSchema, async (req:Request, res:Resp
       const { orderstatus, paymentstatus, paymentmethod } = orderResult.rows[0];
       // Check conditions and return appropriate status code
       if (orderstatus === 'Confirmed' && paymentstatus === 'Pending' && paymentmethod === 'Payment on Delivery') {
-        return res.sendStatus(200);
+        return res.status(200).json({ orderstatus, paymentstatus, paymentmethod });
       } else if (orderstatus === 'Confirmed' && paymentstatus === 'Pending' && paymentmethod === 'Card') {
-        return res.sendStatus(205);
+        return res.status(402).json({ orderstatus, paymentstatus, paymentmethod });
       } else if (orderstatus === 'Failed' && paymentstatus === 'Failed') {
-        return res.sendStatus(210);
-      }else if (orderstatus === 'Confirmed' && paymentstatus === 'Confirmed' && paymentmethod === 'Card') {
-        return res.sendStatus(200);
+        return res.status(400).json({ orderstatus, paymentstatus, paymentmethod });
+      } else if (orderstatus === 'Confirmed' && paymentstatus === 'Confirmed' && paymentmethod === 'Card') {
+        return res.status(200).json({ orderstatus, paymentstatus, paymentmethod });
       } else {
-        return res.status(404).json({ error: 'Product not found' });
+        return res.status(404).json({ error: 'Order state not recognized' });
       }
     } catch (error) {
       console.error('Error checking order status:', error);

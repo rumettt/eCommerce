@@ -1,11 +1,7 @@
 "use server"
-import axios from 'axios';
-import { sign } from 'jsonwebtoken';
+import backendClient from '../../Helpers/backendClient';
 import { cookies } from 'next/headers';
-async function encrypt(key:string){
-    const encryptedKey =  await sign({},key)
-    return encryptedKey
-}
+
 interface propForm{
   userName: string;
   email: string;
@@ -15,23 +11,20 @@ interface propForm{
 }
 
 export default async function signUpHandler({ userName, email, password, mobile_number, dob }:propForm,promotional:boolean) {
-  const url = process.env.BACKEND_URL;
-  const authKey = process.env.AUTH_KEY as string;
-  const sendingKey = await encrypt(authKey);
-
   try {
-    const response = await axios.post(`${url}/api/user/signup/${promotional}`, { userName, email, password, mobile_number, dob }, {
-      headers: { authorization:`Bearer ${sendingKey}` },
-    });
-    cookies().set({
+    const response = await backendClient.post(`/api/user/signup/${promotional}`, { userName, email, password, mobile_number, dob });
+    (await cookies()).set({
       name: 'sessionhold',
       value: response.data.token,
       httpOnly: true,
       secure:true,
       maxAge:24 * 60 * 60 * 1000 * 7
     })
-    return {status:response.status,data:response.data}
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+    return { status: response.status, data: response.data };
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
-};
+}

@@ -17,6 +17,7 @@ const CartConfirmation = () => {
                 found.current = true;
                 setloading(false);
                 break;
+            case '402':
             case '205':
                 found.current = true;
                 paymentPending.current = true;

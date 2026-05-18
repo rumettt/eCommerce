@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { client } from '../data/DB';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomInt } from 'crypto';
 import {googleAuth} from '../controller/auth-controller'
 import { signInSchema,signUpSchema,tokenSchema,googleAuthSchema, googleAuthSchemaNative } from '../validators/authenticationValidation';
 import { matchedData, validationResult } from 'express-validator';
@@ -22,7 +23,7 @@ interface JwtPayload {
 router.post('/user/signup/:promotional',signUpSchema, async (req: Request, res: Response) => {
     const result = validationResult(req);
     if(result.isEmpty()){
-        const userID = Math.round(Math.random() * 1000 * 1000 * 1000);
+        const userID = randomInt(1, 2147483647); // max safe postgres int4
         const {promotional} = matchedData(req);
         let dbPromotional:boolean;
         if(promotional!='false') dbPromotional=true
@@ -45,7 +46,7 @@ router.post('/user/signup/:promotional',signUpSchema, async (req: Request, res: 
     
             if (result.rows.length > 0) {
                 // Email or mobile number already exists
-                return res.status(205).json({ error: 'Email or mobile number already exists' });
+                return res.status(409).json({ error: 'Email or mobile number already exists' });
             }
     
             // Hash the password
@@ -70,7 +71,7 @@ router.post('/user/signup/:promotional',signUpSchema, async (req: Request, res: 
         }
     }else
     {
-        res.status(500).json({ message: 'Validation error' });
+        res.status(400).json({ message: 'Validation error' });
     }
     
 });
@@ -90,7 +91,7 @@ router.post('/user/signin/:remember',signInSchema, async (req: Request, res: Res
 
             if (result.rows.length === 0) {
                 // Email does not exist
-                return res.status(205).json({ error: 'Email does not exist' });
+                return res.status(404).json({ error: 'Email does not exist' });
             }
 
             const user = result.rows[0];
@@ -100,7 +101,7 @@ router.post('/user/signin/:remember',signInSchema, async (req: Request, res: Res
 
             if (!passwordMatch) {
                 // Password does not match
-                return res.status(205).json({ error: 'Incorrect password' });
+                return res.status(401).json({ error: 'Incorrect password' });
             }
             const userData = {
                 userName:user.username,userID: user.userid, email: user.email, mobile_number: user.mobile_number, dob: user.dob
@@ -162,7 +163,7 @@ router.post('/user/session-check',tokenSchema, async (req: Request, res: Respons
         }
     }else
         {
-            res.status(500).json({ message: 'Validation error' });
+            res.status(400).json({ message: 'Validation error' });
         }
     
 });
@@ -175,7 +176,7 @@ router.post('/auth/google',googleAuthSchema,async (req:Request,res:Response)=>{
 
             if (!user) {
                 // Email does not exist
-                return res.status(205).json({ error: 'Email does not exist' });
+                return res.status(404).json({ error: 'Email does not exist' });
             }
             const userData = {
                 userName:user.username,userID: user.userid, email: user.email, mobile_number: user.mobile_number, dob: user.dob
@@ -193,7 +194,7 @@ router.post('/auth/google',googleAuthSchema,async (req:Request,res:Response)=>{
     }
     else
         {
-            res.status(500).json({ message: 'Validation error' });
+            res.status(400).json({ message: 'Validation error' });
         }
     
 });
@@ -211,7 +212,7 @@ router.post('/native/auth/google',googleAuthSchemaNative,async (req:Request,res:
 
             if (result.rows.length === 0) {
                 // Email does not exist
-                return res.status(205).json({ error: 'Email does not exist' });
+                return res.status(404).json({ error: 'Email does not exist' });
             }
 
             const user = result.rows[0];
@@ -232,7 +233,7 @@ router.post('/native/auth/google',googleAuthSchemaNative,async (req:Request,res:
     }
     else
         {
-            res.status(500).json({ message: 'Validation error' });
+            res.status(400).json({ message: 'Validation error' });
         }
     
 });

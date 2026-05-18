@@ -1,20 +1,14 @@
 "use server"
-import axios from 'axios';
-import { sign } from 'jsonwebtoken';
-async function encrypt(key:string){
-    const encryptedKey =  await sign({},key)
-    return encryptedKey
-}
-const url = process.env.BACKEND_URL;
-const authKey = process.env.AUTH_KEY as string;
+import backendClient from '../../Helpers/backendClient';
+
 export default async function contactHandler({name,email,phone,method,message}:{name:string,email:string,phone:string,method:string,message:string}) {
-  const sendingKey = await encrypt(authKey);
   try {
-    const response = await axios.post(`${url}/api/contact`,{name,email,phone,method,message},{
-        headers: { authorization:`Bearer ${sendingKey}` },
-    });
+    const response = await backendClient.post(`/api/contact`,{name,email,phone,method,message});
     return {status:response.status,data:response.data}
-  } catch (error) {
-    return {status:500,error: 'Internal Server Error' }
+  } catch (error: any) {
+    if (error.response) {
+      return { status: error.response.status, data: error.response.data };
+    }
+    return { status: 500, error: 'Internal Server Error' };
   }
 };
