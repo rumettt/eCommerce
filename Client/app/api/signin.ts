@@ -23,6 +23,7 @@ export default async function signInHandler({email,password,remember}:{email:str
         maxAge:24 * 60 * 60 * 1000
       })
     }
+    return { status: response.status, data: response.data };
   } catch (error: any) {
     if (error.response) {
       return { status: error.response.status, data: error.response.data };

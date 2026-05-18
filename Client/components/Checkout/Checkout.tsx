@@ -127,7 +127,7 @@ const Checkout = () => {
       if(sessionCheck?.success && userDataCheck?.success) {
         if(userDataCheck.addresses?.length === 0) {setdialogType('addressRequired');setloading(false);return};
         if(sessionCheck.data != undefined) genUserData.current = sessionCheck.data;
-        if(userDataCheck.addresses != undefined && userDataCheck.addresses.length > 0) userDataCheck.addresses.map((each)=>{if(each.is_default) genUserAddress.current=each});
+        if(userDataCheck.addresses != undefined && userDataCheck.addresses.length > 0) userDataCheck.addresses.map((each: Address)=>{if(each.is_default) genUserAddress.current=each});
         if(genUserAddress.current.addressID === 0){ setdialogType('defaultAddressRequired');setloading(false);return}
         paymentGateway(genUserData.current.userID);
         loading && setloading(false);
