@@ -31,8 +31,7 @@ Welcome to the repository for our full-stack E-Commerce platform built using the
 
 ### 1. Clone the repository
 ```sh
-git clone https://github.com/HarmanPreet-Singh-XYT/E-Commerce.git
-cd E-Commerce
+git clone <Repository.git>
 ```
 
 ### 2. Install Server Dependencies
