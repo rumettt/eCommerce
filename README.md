@@ -2,12 +2,7 @@
 
 Welcome to the repository for our full-stack E-Commerce platform built using the modern **PERN Stack** (PostgreSQL, Express 5, React 19, Node.js) and powered by **Next.js 15**. This project delivers a high-performance, responsive online shopping experience with secure transaction processing, dynamic product catalogs, and custom analytics algorithms.
 
-![Desktop](/website-demo-image/desktop.png)
-![Mobile](/website-demo-image/mobile.png)
-![Showcase1](/website-demo-image/1.png)
-![Showcase2](/website-demo-image/2.png)
 
----
 
 ## Key Features
 
