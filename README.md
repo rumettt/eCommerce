@@ -169,26 +169,4 @@ docker run -d -p 3000:3000 \
   harmanpreet27/ecommerce-client
 ```
 
----
 
-## Running Together with Docker Compose (Recommended)
-
-1. Navigate to the root directory where `docker-compose.yml` is defined.
-2. Ensure you have defined a root-level `.env` file containing all variables.
-3. Start the entire container network (including Postgres database service with automated healthchecks):
-   ```sh
-   docker compose up --build -d
-   ```
-4. Restore the initial database inside the running Postgres container:
-   ```sh
-   docker exec -i $(docker compose ps -q db) psql -U postgres -d ecommerce < Server/ecommerce.sql
-   ```
-
----
-
-## Contributing & License
-
-We welcome contributions! Please fork the repository and submit a pull request. This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-### Contact & Support
-For questions, feedback, or support requests, reach out to: **harmanpreetsingh@programmer.net**
